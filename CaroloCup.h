@@ -111,6 +111,7 @@ class Gyroscope {
 		void begin(unsigned short samplingRate = DEFAULT_GYRO_SAMPLING); //in milliseconds
 		int getAngularDisplacement();
 		void update();
+		unsigned int calibrate(unsigned int measurements = 100);
 	private:
 		void initMeasurement();
 		void initializeGyro();
@@ -120,6 +121,8 @@ class Gyroscope {
 		int readRegister(int deviceAddress, byte address);
 		unsigned short _samplingRate;
 		static const unsigned short DEFAULT_GYRO_SAMPLING;
+		int _angularDisplacement;
+		unsigned long _prevSample;
 };
 
 class Razorboard{
