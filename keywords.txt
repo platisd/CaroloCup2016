@@ -30,3 +30,4 @@ setRange	KEYWORD2
 setPingDelay	KEYWORD2
 enableCruiseControl	KEYWORD2
 updateMotors	KEYWORD2
+calibrate	KEYWORD2
