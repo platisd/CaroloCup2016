@@ -3,7 +3,7 @@
 #include <CaroloCup.h>
 #include "CarVars.h"
 
-#define DEBUG //comment this line out for protobuffer output
+//#define DEBUG //comment this line out for protobuffer output
 #if 1 //preprocessor bug workaround, do not remove if you want the #ifndef DEBUG to work
 __asm volatile ("nop");
 #endif
@@ -73,6 +73,9 @@ void setup() {
   setupChangeInterrupt(OVERRIDE_SERVO_PIN);
   gyro.attach();
   gyro.begin(); //default 80ms
+  pinMode(10, INPUT); //button 1
+  pinMode(11, INPUT); //button 2
+  pinMode(12, INPUT); //button 3
   delay(500); //wait a bit for the esc
   car.enableCruiseControl(encoderLeft);
   car.setSpeed(0);
@@ -151,7 +154,7 @@ void handleInput() {
       pb_istream_t instream = pb_istream_from_buffer(dec_buffer, BUFFER_SIZE);
       protoDec = pb_decode(&instream, Control_fields, &message);
       if (protoDec) { //if it's a valid protopacket
-        car.setSpeed(message.acceleration/10.0); //divide by 10 since HLB is sending over floats as integers
+        car.setSpeed((int)message.speed/ 10.0); //divide by 10 since HLB is sending over floats as integers
         car.setAngle(message.steering);
       }
 #endif
@@ -230,6 +233,18 @@ void transmitSensorData() {
     out += encoderRight.getDistance();
     out += ".GYR-";
     out += gyro.getAngularDisplacement();
+    out += ".BUTTON-";
+    int button = 0;
+    if(digitalRead(10)){
+      button = button + 100;
+    }
+    if(digitalRead(11)){
+      button = button + 10;
+    }
+    if(digitalRead(12)){
+      button = button +1;
+    }
+    out += button;
     Serial.println(encodedNetstring(out));
 #else //use protobuffer
     Sensors message;
@@ -239,8 +254,20 @@ void transmitSensorData() {
     message.irRearRight = middleRearIR.getDistance();
     message.irBackLeft = rearLeftIR.getDistance();
     message.irBackRight = rearRightIR.getDistance();
-    message.wheelFrontLeft = encoderLeft.getDistance();
+    message.wheelRearLeft = encoderLeft.getDistance();
     message.wheelRearRight = encoderRight.getDistance();
+    message.GyroHeading = gyro.getAngularDisplacement();
+    int button = 0;
+    if(digitalRead(10)){
+      button = button + 100;
+    }
+    if(digitalRead(11)){
+      button = button + 10;
+    }
+    if(digitalRead(12)){
+      button = button +1;
+    }
+    message.buttonState = button;
     pb_ostream_t outstream = pb_ostream_from_buffer(enc_buffer, sizeof(enc_buffer));
     status = pb_encode(&outstream, Sensors_fields, &message);
     message_length = outstream.bytes_written;
