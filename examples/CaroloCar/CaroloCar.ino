@@ -50,6 +50,7 @@ volatile unsigned int steeringSignalFreq = 0;
 volatile uint16_t qualityControl = 0; //if this byte is 1111111111111111, that means the measurements we received were of good quality (controller is turned on)
 unsigned int throttleFreq = 0;
 unsigned int servoFreq = 0;
+int led_int=0;
 
 void setup() {
   car.begin();
@@ -87,7 +88,7 @@ void setup() {
 void loop() {
   handleOverride(); //look for an override signal and if it exists disable serial input from the HLB
   handleInput(); //look for a serial input if override is not triggered and act accordingly
-  updateLEDs(); //update LEDs depending on the mode we are currently in
+  updateLEDs(led_int); //update LEDs depending on the mode we are currently in
   gyro.update(); //integrate gyroscope's readings
   car.updateMotors();
   transmitSensorData(); //fetch and transmit the sensor data in the correct intervals
@@ -156,6 +157,8 @@ void handleInput() {
       if (protoDec) { //if it's a valid protopacket
         car.setSpeed((int)message.speed/ 10.0); //divide by 10 since HLB is sending over floats as integers
         car.setAngle(message.steering);
+        led_int = message.lights;
+        
       }
 #endif
     }
@@ -190,11 +193,23 @@ void handleInput() {
   }
 }
 
-void updateLEDs() {
+void updateLEDs(int li) {
   if (millis() - prevCheck > LEDrefreshRate) {
     if (overrideTriggered) { //if override is triggered
       Serial3.print('m');
-    } else {  //if override is NOT triggered
+    }
+    else { //if car is running
+      bool lights[4] = {0,0,0,0}; // right blinker, left blinker, brakes
+      for (int i = 3; i > 0; i--) lights[i] = (li & (1 << i)) != 0;
+      if (lights[1]) Serial3.print('r');
+      if (lights[2]) Serial3.print('l');
+      if (lights[3]) Serial3.print('s');
+      if (li == 0) Serial3.print('i');
+    }
+    
+    
+    /*
+     else {  //if override is NOT triggered
       if (!car.getSpeed()) { //if car is immobilized
         Serial3.print('s');
       } else { //if car is running
@@ -207,6 +222,7 @@ void updateLEDs() {
         }
       }
     }
+    */
     prevCheck = millis();
   }
 }
@@ -257,17 +273,13 @@ void transmitSensorData() {
     message.wheelRearLeft = encoderLeft.getDistance();
     message.wheelRearRight = encoderRight.getDistance();
     message.GyroHeading = gyro.getAngularDisplacement();
-    int button = 0;
-    if(digitalRead(10)){
-      button = button + 100;
-    }
-    if(digitalRead(11)){
-      button = button + 10;
-    }
-    if(digitalRead(12)){
-      button = button +1;
-    }
-    message.buttonState = button;
+    bool buttons[3]= {0,0,0};
+    buttons[0] = digitalRead(10);
+    buttons[1] = digitalRead(11);
+    buttons[2] = digitalRead(12);
+    int buttonsINT = 0;
+    for(int i = 0; i < 3; i++) if(buttons[i]) buttonsINT |= 1 << (3 - i);
+    message.buttonState = buttonsINT;
     pb_ostream_t outstream = pb_ostream_from_buffer(enc_buffer, sizeof(enc_buffer));
     status = pb_encode(&outstream, Sensors_fields, &message);
     message_length = outstream.bytes_written;
