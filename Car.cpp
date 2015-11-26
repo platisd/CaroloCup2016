@@ -74,8 +74,6 @@ int Car::motorPIDcontrol(const int previousSpeed, const float targetSpeed, const
 	_integratedError += error;
 	correction = (_Kp * error) + (_Ki * _integratedError) + (_Kd * (error - _previousError));                            
 	_previousError = error;
-//	Serial.print("\t\tError: ");
-//	Serial.print(error);
 	return constrain(previousSpeed + int(correction), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
 }
 
@@ -100,13 +98,13 @@ void Car::setAngle(int degrees){ //platform specific method
 
 void Car::stop(){ //platform specific method
 	if (getSpeed()>IDLE_SPEED){
-		setRawSpeed(-100);
+		setRawSpeed(IDLE_RAW_SPEED - 100);
 	}else if(getSpeed()<IDLE_SPEED){
-		setRawSpeed(100);
+		setRawSpeed(IDLE_RAW_SPEED + 100);
 	}
 	delay(35);
 	if (cruiseControl){
-		setRawSpeed(IDLE_SPEED); //shut the engines down, we should be stopped by now
+		setRawSpeed(IDLE_RAW_SPEED); //shut the engines down, we should be stopped by now
 		enableCruiseControl(_encoder); //re-initialize the cruise control, se we get rid of previous error and pid output
 		_speed = IDLE_SPEED;
 	}else{
