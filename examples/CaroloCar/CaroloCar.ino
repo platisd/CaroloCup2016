@@ -74,9 +74,9 @@ void setup() {
   setupChangeInterrupt(OVERRIDE_SERVO_PIN);
   gyro.attach();
   gyro.begin(); //default 80ms
-  pinMode(10, INPUT); //button 1
-  pinMode(11, INPUT); //button 2
-  pinMode(12, INPUT); //button 3
+  pinMode(BUTTON1_PIN, INPUT); //button 1
+  pinMode(BUTTON2_PIN, INPUT); //button 2
+  pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
   car.enableCruiseControl(encoderLeft);
   car.setSpeed(0);
@@ -251,13 +251,13 @@ void transmitSensorData() {
     out += gyro.getAngularDisplacement();
     out += ".BUTTON-";
     int button = 0;
-    if(digitalRead(10)){
+    if(digitalRead(BUTTON1_PIN)){
       button = button + 100;
     }
-    if(digitalRead(11)){
+    if(digitalRead(BUTTON2_PIN)){
       button = button + 10;
     }
-    if(digitalRead(12)){
+    if(digitalRead(BUTTON3_PIN)){
       button = button +1;
     }
     out += button;
@@ -274,9 +274,9 @@ void transmitSensorData() {
     message.wheelRearRight = encoderRight.getDistance();
     message.GyroHeading = gyro.getAngularDisplacement();
     bool buttons[3]= {0,0,0};
-    buttons[0] = digitalRead(10);
-    buttons[1] = digitalRead(11);
-    buttons[2] = digitalRead(12);
+    buttons[0] = digitalRead(BUTTON1_PIN);
+    buttons[1] = digitalRead(BUTTON2_PIN);
+    buttons[2] = digitalRead(BUTTON3_PIN);
     int buttonsINT = 0;
     for(int i = 0; i < 3; i++) if(buttons[i]) buttonsINT |= 1 << (3 - i);
     message.buttonState = buttonsINT;

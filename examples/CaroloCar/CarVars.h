@@ -3,6 +3,9 @@
 
 #define SERVO_PIN 8
 #define ESC_PIN 9
+#define BUTTON1_PIN 10
+#define BUTTON2_PIN 11
+#define BUTTON3_PIN 12
 
 #define US_REAR_ADDRESS 0x73
 #define US_FRONT_ADDRESS 0x70
