@@ -78,7 +78,8 @@ void setup() {
   pinMode(BUTTON2_PIN, INPUT); //button 2
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
-  car.enableCruiseControl(encoderLeft);
+  //car.enableCruiseControl(encoderLeft); //
+  car.enableCruiseControl(encoderLeft,2.5,0,5,40); //Odometer encoder, float Kp, float Ki, float Kd, unsigned short pidLoopInterval
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
