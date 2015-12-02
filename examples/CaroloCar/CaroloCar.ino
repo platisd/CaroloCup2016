@@ -78,8 +78,7 @@ void setup() {
   pinMode(BUTTON2_PIN, INPUT); //button 2
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
-  //car.enableCruiseControl(encoderLeft); //
-  car.enableCruiseControl(encoderLeft,2.5,0,5,40); //Odometer encoder, float Kp, float Ki, float Kd, unsigned short pidLoopInterval
+  car.enableCruiseControl(encoderLeft);
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
@@ -274,6 +273,7 @@ void transmitSensorData() {
     message.wheelRearLeft = encoderLeft.getDistance();
     message.wheelRearRight = encoderRight.getDistance();
     message.GyroHeading = gyro.getAngularDisplacement();
+    message.lightReading = analogRead(LIGHT_PIN);
     bool buttons[3]= {0,0,0};
     buttons[0] = digitalRead(BUTTON1_PIN);
     buttons[1] = digitalRead(BUTTON2_PIN);
