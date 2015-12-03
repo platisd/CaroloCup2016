@@ -162,10 +162,11 @@ class SRF08{
 		void setGain(const uint8_t gainValue);
 		void setRange(const uint8_t rangeValue);
 		void setPingDelay(const uint8_t milliseconds = DEFAULT_PING_DELAY);
-		int getDistance();
+		unsigned int getDistance();
+		unsigned int getLightReading();
 		void changeAddress(const uint8_t newAddress);
 	private:
-		int ping();
+		unsigned int ping();
 		uint8_t _address, _delay;
 		static const uint8_t DEFAULT_PING_DELAY, DEFAULT_SRF08_ADDRESS;
 

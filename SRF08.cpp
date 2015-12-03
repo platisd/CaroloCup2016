@@ -32,11 +32,11 @@ void SRF08::setPingDelay(const uint8_t milliseconds){
 	_delay = milliseconds;
 }
 
-int SRF08::getDistance(){
+unsigned int SRF08::getDistance(){
 	return ping();
 }
 
-int SRF08::ping(){
+unsigned int SRF08::ping(){
 	Wire.beginTransmission(_address);
 	Wire.write(byte(0x00));
 	Wire.write(byte(0x51));
@@ -50,6 +50,20 @@ int SRF08::ping(){
 	byte high = Wire.read();
 	byte low = Wire.read();
 	return (high << 8) + low;
+}
+
+unsigned int SRF08::getLightReading(){
+	Wire.beginTransmission(_address);
+	Wire.write(byte(0x00));
+	Wire.write(byte(0x51));
+	Wire.endTransmission();
+	delay(_delay);
+	Wire.beginTransmission(_address);
+	Wire.write(byte(0x01));
+	Wire.endTransmission();
+	Wire.requestFrom(_address, uint8_t (1));
+	while (!Wire.available());
+	return Wire.read();
 }
 
 void SRF08::changeAddress(uint8_t newAddress){
