@@ -274,7 +274,7 @@ void transmitSensorData() {
     message.wheelRearLeft = encoderLeft.getDistance();
     message.wheelRearRight = encoderRight.getDistance();
     message.GyroHeading = gyro.getAngularDisplacement();
-    message.lightReading = analogRead(LIGHT_PIN);
+    message.lightReading = (analogRead(LIGHT_PIN)* 0.9765625);
     bool buttons[3]= {0,0,0};
     buttons[0] = digitalRead(BUTTON1_PIN);
     buttons[1] = digitalRead(BUTTON2_PIN);
