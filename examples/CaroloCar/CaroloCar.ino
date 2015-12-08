@@ -50,7 +50,7 @@ volatile unsigned int steeringSignalFreq = 0;
 volatile uint16_t qualityControl = 0; //if this byte is 1111111111111111, that means the measurements we received were of good quality (controller is turned on)
 unsigned int throttleFreq = 0;
 unsigned int servoFreq = 0;
-int led_int=0;
+int led_int = 0;
 
 void setup() {
   car.begin();
@@ -78,8 +78,8 @@ void setup() {
   pinMode(BUTTON2_PIN, INPUT); //button 2
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
- // car.enableCruiseControl(encoderLeft);
- car.enableCruiseControl(encoderLeft,2.5,0,1,10);
+  // car.enableCruiseControl(encoderLeft);
+  car.enableCruiseControl(encoderLeft, 2.5, 0, 1, 10);
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
@@ -156,10 +156,10 @@ void handleInput() {
       pb_istream_t instream = pb_istream_from_buffer(dec_buffer, BUFFER_SIZE);
       protoDec = pb_decode(&instream, Control_fields, &message);
       if (protoDec) { //if it's a valid protopacket
-        car.setSpeed((int)message.speed/ 10.0); //divide by 10 since HLB is sending over floats as integers
+        car.setSpeed((int)message.speed / 10.0); //divide by 10 since HLB is sending over floats as integers
         car.setAngle(message.steering);
         led_int = message.lights;
-        
+
       }
 #endif
     }
@@ -170,11 +170,12 @@ void handleInput() {
       if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
         car.setAngle(0);
       } else { //if the difference between the signal we received and the idle frequency is big enough, only then move the servo
-        if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
-          car.setAngle(OVERRIDE_STEER_RIGHT);
-        } else {
-          car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
-        }
+          car.setAngle(servoFreq); // provide the flexibility to controll steering continuously
+        //if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
+        //  car.setAngle(OVERRIDE_STEER_RIGHT);
+        //} else {
+        //  car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
+       // }
       }
     }
     //handle override throttle
@@ -183,11 +184,12 @@ void handleInput() {
       if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
         car.setSpeed(0);
       } else {
-        if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
-          car.setSpeed(OVERRIDE_FORWARD_SPEED);
-        } else {
-          car.setSpeed(OVERRIDE_BACKWARD_SPEED);
-        }
+        car.setSpeed(throttleFreq);//// provide the flexibility to controll speed continuously
+        //if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
+        //  car.setSpeed(OVERRIDE_FORWARD_SPEED);
+        //} else {
+        //  car.setSpeed(OVERRIDE_BACKWARD_SPEED);
+        //}
       }
     }
     while (Serial.read() != -1); //discard incoming data while on override
@@ -200,15 +202,15 @@ void updateLEDs(int li) {
       Serial3.print('m');
     }
     else { //if car is running
-      bool lights[4] = {0,0,0,0}; // right blinker, left blinker, brakes
+      bool lights[4] = {0, 0, 0, 0}; // right blinker, left blinker, brakes
       for (int i = 3; i > 0; i--) lights[i] = (li & (1 << i)) != 0;
       if (lights[1]) Serial3.print('r');
       if (lights[2]) Serial3.print('l');
       if (lights[3]) Serial3.print('s');
       if (li == 0) Serial3.print('i');
     }
-    
-    
+
+
     /*
      else {  //if override is NOT triggered
       if (!car.getSpeed()) { //if car is immobilized
@@ -252,14 +254,14 @@ void transmitSensorData() {
     out += gyro.getAngularDisplacement();
     out += ".BUTTON-";
     int button = 0;
-    if(digitalRead(BUTTON1_PIN)){
+    if (digitalRead(BUTTON1_PIN)) {
       button = button + 100;
     }
-    if(digitalRead(BUTTON2_PIN)){
+    if (digitalRead(BUTTON2_PIN)) {
       button = button + 10;
     }
-    if(digitalRead(BUTTON3_PIN)){
-      button = button +1;
+    if (digitalRead(BUTTON3_PIN)) {
+      button = button + 1;
     }
     out += button;
     Serial.println(encodedNetstring(out));
@@ -274,13 +276,13 @@ void transmitSensorData() {
     message.wheelRearLeft = encoderLeft.getDistance();
     message.wheelRearRight = encoderRight.getDistance();
     message.GyroHeading = gyro.getAngularDisplacement();
-    message.lightReading = (analogRead(LIGHT_PIN)* 0.9765625);
-    bool buttons[3]= {0,0,0};
+    message.lightReading = (analogRead(LIGHT_PIN) * 0.9765625);
+    bool buttons[3] = {0, 0, 0};
     buttons[0] = digitalRead(BUTTON1_PIN);
     buttons[1] = digitalRead(BUTTON2_PIN);
     buttons[2] = digitalRead(BUTTON3_PIN);
     int buttonsINT = 0;
-    for(int i = 0; i < 3; i++) if(buttons[i]) buttonsINT |= 1 << (3 - i);
+    for (int i = 0; i < 3; i++) if (buttons[i]) buttonsINT |= 1 << (3 - i);
     message.buttonState = buttonsINT;
     pb_ostream_t outstream = pb_ostream_from_buffer(enc_buffer, sizeof(enc_buffer));
     status = pb_encode(&outstream, Sensors_fields, &message);
