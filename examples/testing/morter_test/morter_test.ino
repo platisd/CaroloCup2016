@@ -79,7 +79,7 @@ void setup() {
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
   // car.enableCruiseControl(encoderLeft);
-  car.enableCruiseControl(encoderLeft, 2.5, 0, 1, 10);
+  //car.enableCruiseControl(encoderLeft, 2.5, 0, 1, 10);
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
@@ -92,7 +92,8 @@ void loop() {
   updateLEDs(led_int); //update LEDs depending on the mode we are currently in
   gyro.update(); //integrate gyroscope's readings
   car.updateMotors();
-  transmitSensorData(); //fetch and transmit the sensor data in the correct intervals
+  
+  //transmitSensorData(); //fetch and transmit the sensor data in the correct intervals
 }
 
 void handleOverride() {
@@ -171,29 +172,37 @@ void handleInput() {
       if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
         car.setAngle(0);
       } else { //if the difference between the signal we received and the idle frequency is big enough, only then move the servo
-         // car.setAngle(servoFreq); // provide the flexibility to controll steering continuously
-        if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
-          car.setAngle(OVERRIDE_STEER_RIGHT);
-        } else {
-          car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
-        }
+          car.setAngle(servoFreq- NEUTRAL_FREQUENCY); // provide the flexibility to controll steering continuously
+         
+          
+        //if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
+        //  car.setAngle(OVERRIDE_STEER_RIGHT);
+        //} else {
+        //  car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
+        //}
       }
-      
+       Serial.print("\t\t");
+       Serial.println(servoFreq);
+     
     }
     //handle override throttle
     if (throttleFreq && (throttleFreq < MAX_OVERRIDE_FREQ) && (throttleFreq > MIN_OVERRIDE_FREQ)) {
-     
+      
       short diff = throttleFreq - NEUTRAL_FREQUENCY;
       if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
         car.setSpeed(0);
       } else {
-        //car.setSpeed(throttleFreq - NEUTRAL_FREQUENCY);//// provide the flexibility to controll speed continuously
-        if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
-          car.setSpeed(OVERRIDE_FORWARD_SPEED);
-        } else {
-          car.setSpeed(OVERRIDE_BACKWARD_SPEED);
-        }
+        car.setSpeed(throttleFreq - NEUTRAL_FREQUENCY);//// provide the flexibility to controll speed continuously
+        
+        //if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
+        //  car.setSpeed(OVERRIDE_FORWARD_SPEED);
+        //} else {
+        //  car.setSpeed(OVERRIDE_BACKWARD_SPEED);
+        //}
       }
+      //float groundSpeed = car.getGroundSpeed();
+      Serial.println(throttleFreq);
+      
     }
     while (Serial.read() != -1); //discard incoming data while on override
   }
