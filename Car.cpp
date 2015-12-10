@@ -63,6 +63,7 @@ void Car::updateMotors(){
 			int controlledSpeed = motorPIDcontrol(_previousControlledSpeed, _speed, measuredSpeed);
 			setRawSpeed(controlledSpeed);
 			_previousControlledSpeed = controlledSpeed;
+			_lastMeasuredSpeed = measuredSpeed;
 		}
 		_lastMotorUpdate = millis();
 	}
@@ -137,4 +138,8 @@ void Car::enableCruiseControl(Odometer encoder, float Kp, float Ki, float Kd, un
 void Car::disableCruiseControl(){
 	cruiseControl = false;
 	_speed = _previousControlledSpeed; //update the speed with the PWM equivalent
+}
+
+float Car::getMeasuredSpeed(){
+	return _lastMeasuredSpeed;
 }

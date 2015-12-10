@@ -44,6 +44,7 @@ class Car {
 		void enableCruiseControl(Odometer encoder, float Kp = DEFAULT_KP, float Ki = DEFAULT_KI, float Kd = DEFAULT_KD, unsigned short frequency = DEFAULT_PID_LOOP_INTERVAL);
 		void updateMotors();
 		void disableCruiseControl();
+		float getMeasuredSpeed();
 	private:
 		void setSteeringWheelPin(unsigned short steeringWheelPin);
 		void setESCPin(unsigned short escPin);
@@ -59,6 +60,7 @@ class Car {
 		float _Kp, _Ki, _Kd;
 		Odometer _encoder;
 		boolean cruiseControl;
+		float _lastMeasuredSpeed;
 		unsigned long _lastMotorUpdate, _previousDistance;
 		int _previousControlledSpeed;
 		int _previousError, _integratedError;
