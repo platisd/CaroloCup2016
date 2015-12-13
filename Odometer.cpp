@@ -12,7 +12,10 @@ void updateCounter2();
 // Macro to convert from odometer pulses to centimeters. (ca. 33 pulses per meter, that's why we multiply by 3 to find value in cm)
 #define PulsesToCentimeters(pulses) (pulses * 3.3)
 
-volatile unsigned long _pulseCounter[2];
+const float MILLIMETERS_PER_PULSE = 30.3; //we divide 1000 by how many pulses per meter we get
+volatile float _measuredSpeed[2] = {0};
+volatile unsigned long _previousPulseTime[2] = {0};
+volatile unsigned long _pulseCounter[2] = {0};
 static unsigned short odometers = 0;
 
 Odometer::Odometer(){
@@ -47,9 +50,24 @@ void Odometer::detach(){
 	detachInterrupt(_odometerInterruptPin);
 }
 
+float Odometer::getSpeed(){
+	return _measuredSpeed[_odometerID];
+}
+
+void updateOdometerSpeed(unsigned short odometerID){ //calculates the speed for the given odometer
+	unsigned long currentTime = millis();
+	unsigned long dt = currentTime - _previousPulseTime[odometerID]; //in milliseconds
+	if (dt){ //avoid division by 0 in case we had a very fast (less than 1 ms) pulse
+		_measuredSpeed[odometerID] = MILLIMETERS_PER_PULSE / dt; //x & t are in milli scale, so the result can be in m/s
+	}
+	_previousPulseTime[odometerID] = currentTime;
+}
+
 void updateCounter1(){
+	updateOdometerSpeed(0);
 	_pulseCounter[0]++;
 }
 void updateCounter2(){
+	updateOdometerSpeed(1);
 	_pulseCounter[1]++;
 }

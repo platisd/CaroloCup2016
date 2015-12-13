@@ -57,13 +57,12 @@ void Car::setSpeed(float newSpeed){
 void Car::updateMotors(){
 	if (cruiseControl && (millis() > _lastMotorUpdate + _pidLoopInterval)){
 		if (_speed){ //if _speed is 0, we have already made sure the car is stopped. don't try to adjust if car is just drifting
-			float measuredSpeed = getGroundSpeed(); //speed in cm/milliseconds
-			measuredSpeed *= 10; //transform it into m/seconds, divide by 100 to turn cm into m and multiply by 1000, to turn ms to sec
+			float measuredSpeed = _encoder.getSpeed(); //speed in m/s
 			if (_speed < 0) measuredSpeed *= -1; //if we are going reverse, illustrate that in the value of measuredSpeed
 			int controlledSpeed = motorPIDcontrol(_previousControlledSpeed, _speed, measuredSpeed);
 			setRawSpeed(controlledSpeed);
 			_previousControlledSpeed = controlledSpeed;
-			_lastMeasuredSpeed = measuredSpeed;
+			_lastMeasuredSpeed = getGroundSpeed() * (abs(_speed)/_speed); //log down the (signed) measured speed by the controller
 		}
 		_lastMotorUpdate = millis();
 	}

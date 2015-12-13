@@ -27,6 +27,7 @@ class Odometer {
 		int attach(unsigned short odometerPin);
 		void begin();
 		unsigned long getDistance();
+		float getSpeed();
 		void detach();
 	private:
 		unsigned short _odometerInterruptPin, _odometerID;
