@@ -22,7 +22,7 @@ Finally, the repository for the application that is running in the single board 
 - [Servo library](http://www.arduino.cc/en/Reference/Servo) used for controlling the ESC and the steering wheel
 
 ### Documentation
-- Autonomous-Car Arduino Library [Wiki](https://github.com/platisd/AndroidCar/wiki)
+- Smartcar shield library [Wiki](https://github.com/platisd/smartcar_shield/wiki) (use this as we will eventually migrate to it)
 
 [/examples/CaroloCar]:examples/CaroloCar
 [/LED_DRIVER]:LED_DRIVER
