@@ -90,7 +90,7 @@ void loop() {
   handleOverride(); //look for an override signal and if it exists disable serial input from the HLB
   handleInput(); //look for a serial input if override is not triggered and act accordingly
   updateLEDs(led_int); //update LEDs depending on the mode we are currently in
-  gyro.update(); //integrate gyroscope's readings
+  //gyro.update(); //integrate gyroscope's readings
   car.updateMotors();
   
   //transmitSensorData(); //fetch and transmit the sensor data in the correct intervals
@@ -181,8 +181,8 @@ void handleInput() {
         //  car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
         //}
       }
-       Serial.print("\t\t");
-       Serial.println(servoFreq);
+       //Serial.print("\t\t");
+       //Serial.println(servoFreq);
      
     }
     //handle override throttle
@@ -201,7 +201,15 @@ void handleInput() {
         //}
       }
       //float groundSpeed = car.getGroundSpeed();
-      Serial.println(throttleFreq);
+      float leftEncreading = encoderLeft.getSpeed();
+      float rightEncreading = encoderRight.getSpeed();
+      Serial.print(throttleFreq);
+      Serial.print(",");
+      Serial.print(leftEncreading);
+      Serial.print(",");
+      Serial.println(rightEncreading);
+      
+      
       
     }
     while (Serial.read() != -1); //discard incoming data while on override
