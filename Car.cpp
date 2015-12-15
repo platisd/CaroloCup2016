@@ -71,8 +71,8 @@ void Car::updateMotors(){
 int Car::motorPIDcontrol(const int previousSpeed, const float targetSpeed, const float actualSpeed){
 	float correction = 0;
 	float error = targetSpeed - actualSpeed;
-	_integratedError += error;
-	correction = (_Kp * error) + (_Ki * _integratedError) + (_Kd * (error - _previousError));                            
+	_integratedError += error * _pidLoopInterval;
+	correction = (_Kp * error) + (_Ki * _integratedError) + (_Kd * (error - _previousError)/_pidLoopInterval);                            
 	_previousError = error;
 	return constrain(previousSpeed + int(correction), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
 }
