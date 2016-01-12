@@ -12,7 +12,7 @@ const float Car::DEFAULT_KI = 0.0;
 const float Car::DEFAULT_KD = 10.0;
 
 const int IDLE_RAW_SPEED = 1500;
-const int MAX_FRONT_RAW_SPEED = 1650; //can go to 1800
+const int MAX_FRONT_RAW_SPEED = 1800; //can go to 1800
 const int MAX_BACK_RAW_SPEED = 1200; //can go to 1200
 const int IDLE_SPEED = 0; //the user-set frequency where the car is idle
 const int MAX_BACK_SPEED = MAX_BACK_RAW_SPEED - IDLE_RAW_SPEED; //the minimum user-set frequency we are allowed to go
@@ -49,7 +49,8 @@ void Car::setSpeed(float newSpeed){
 		if (_speed && (_speed != IDLE_RAW_SPEED) && (newSpeed * _speed) <= 0) stop(); //if the speeds are signed differently, stop the car and then set the new speed. Ignore this if the speed is already 0 and if speed is at the idle raw speed i.e. leftovers from non-cruise control mode (if IDLE_RAW_SPEED is not 0, it makes sense)
 		_speed = constrain(newSpeed, MAX_BACK_CRUISE_SPEED, MAX_FRONT_CRUISE_SPEED);
 	}else{
-		_speed = constrain(IDLE_RAW_SPEED + int(newSpeed), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
+		//_speed = constrain(IDLE_RAW_SPEED + int(newSpeed), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
+		_speed = constrain(speedToFreq(newSpeed), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
 		setRawSpeed(_speed);
 	}
 }
@@ -142,3 +143,12 @@ void Car::disableCruiseControl(){
 float Car::getMeasuredSpeed(){
 	return _lastMeasuredSpeed;
 }
+int Car::speedToFreq(float MpS){
+	if (MpS >0){
+		return MpS*60 +IDLE_RAW_SPEED;
+	}
+	else{
+		return MpS*200 +IDLE_RAW_SPEED;
+	}
+   
+  }

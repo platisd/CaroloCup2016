@@ -47,6 +47,7 @@ class Car {
 		void disableCruiseControl();
 		float getMeasuredSpeed();
 	private:
+		int speedToFreq(float MpS);
 		void setSteeringWheelPin(unsigned short steeringWheelPin);
 		void setESCPin(unsigned short escPin);
 		int motorPIDcontrol(const int previousSpeed, const float targetSpeed, const float actualSpeed);
@@ -65,6 +66,7 @@ class Car {
 		unsigned long _lastMotorUpdate, _previousDistance;
 		int _previousControlledSpeed;
 		int _previousError, _integratedError;
+		
 };
 
 class Sonar {

@@ -79,7 +79,7 @@ void setup() {
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
   // car.enableCruiseControl(encoderLeft);
-  car.enableCruiseControl(encoderLeft, 2.5, 0, 1, 10);
+  ///car.enableCruiseControl(encoderLeft, 1, 0, 1, 50);
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
@@ -178,7 +178,7 @@ void handleInput() {
           car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
         }
       }
-      
+      //Serial.println(encoderLeft.getSpeed());
     }
     //handle override throttle
     if (throttleFreq && (throttleFreq < MAX_OVERRIDE_FREQ) && (throttleFreq > MIN_OVERRIDE_FREQ)) {
@@ -304,7 +304,8 @@ void transmitSensorData() {
 #endif
     previousTransmission = millis();
   }
-}
+} 
+
 
 void setupChangeInterrupt(const unsigned short pin) { //a method to setup change interrupts on non external interrupt pins
   pinMode(pin, INPUT); //set the pin as input
