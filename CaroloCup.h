@@ -56,7 +56,7 @@ class Car {
 		unsigned short _steeringWheelPin, _escPin, _pidLoopInterval;
 		Servo motor, steeringWheel;
 		int _angle;
-		float _speed;
+		float _speed; // speed  measured in m/s
 		static const unsigned short DEFAULT_SERVO_PIN, DEFAULT_ESC_PIN, DEFAULT_PID_LOOP_INTERVAL;
 		static const float DEFAULT_KP, DEFAULT_KI, DEFAULT_KD;
 		float _Kp, _Ki, _Kd;

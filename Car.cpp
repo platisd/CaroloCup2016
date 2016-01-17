@@ -14,11 +14,13 @@ const float Car::DEFAULT_KD = 10.0;
 const int IDLE_RAW_SPEED = 1500;
 const int MAX_FRONT_RAW_SPEED = 1800; //can go to 1800
 const int MAX_BACK_RAW_SPEED = 1200; //can go to 1200
-const int IDLE_SPEED = 0; //the user-set frequency where the car is idle
-const int MAX_BACK_SPEED = MAX_BACK_RAW_SPEED - IDLE_RAW_SPEED; //the minimum user-set frequency we are allowed to go
-const int MAX_FRONT_SPEED = MAX_FRONT_RAW_SPEED - IDLE_RAW_SPEED; //the max user-set frequency we are allowed to go
-const float MAX_BACK_CRUISE_SPEED = -2;
-const float MAX_FRONT_CRUISE_SPEED = 2;
+const float IDLE_SPEED = 0.0; //the speed where the car is idle
+const int BRAKE_FRONT_RAW_SPEED = 1300;
+const int BRAKE_BACK_RAW_SPEED = 1550;
+const float MAX_BACK_SPEED = -2.0; //the minimum user-set frequency we are allowed to go
+const float MAX_FRONT_SPEED = 2.0; //the max user-set frequency we are allowed to go
+const float MAX_BACK_CRUISE_SPEED = -2.0;
+const float MAX_FRONT_CRUISE_SPEED = 2.0;
 const int STRAIGHT_WHEELS = 90;
 const int MAX_RIGHT_DEGREES = 120;
 const int MAX_LEFT_DEGREES = 60;
@@ -46,12 +48,12 @@ void Car::setESCPin(unsigned short escPin){
 
 void Car::setSpeed(float newSpeed){
 	if (cruiseControl){
-		if (_speed && (_speed != IDLE_RAW_SPEED) && (newSpeed * _speed) <= 0) stop(); //if the speeds are signed differently, stop the car and then set the new speed. Ignore this if the speed is already 0 and if speed is at the idle raw speed i.e. leftovers from non-cruise control mode (if IDLE_RAW_SPEED is not 0, it makes sense)
+		if ((_speed != IDLE_SPEED) && (newSpeed * _speed) <= 0) stop(); //if the speeds are signed differently, stop the car and then set the new speed. Ignore this if the speed is already 0 and if speed is at the idle raw speed i.e. leftovers from non-cruise control mode (if IDLE_RAW_SPEED is not 0, it makes sense)
 		_speed = constrain(newSpeed, MAX_BACK_CRUISE_SPEED, MAX_FRONT_CRUISE_SPEED);
 	}else{
-		if ( _speed != IDLE_RAW_SPEED && (newSpeed < 0.001 && newSpeed > -0.001)) stop(); //if we are not already stopped (_speed = idle raw speed) and the new speed is 0 then stop
-		_speed = constrain(speedToFreq(newSpeed), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
-		setRawSpeed(_speed);
+		if ( _speed != IDLE_SPEED && (newSpeed < 0.001 && newSpeed > -0.001)) stop(); //if we are not already stopped (_speed = idle raw speed) and the new speed is 0 then stop
+		_speed = constrain(newSpeed, MAX_BACK_SPEED, MAX_FRONT_SPEED);
+		setRawSpeed(speedToFreq(_speed));
 	}
 }
 
@@ -100,22 +102,22 @@ void Car::setAngle(int degrees){ //platform specific method
 void Car::stop(){ //platform specific method
 	if (_speed > 0.001 || _speed < -0.001){	
 		_lastMotorUpdate = millis();
-		float velocity = 0;
-		for (int i = 0; i<3; i++){
-			delay(DEFAULT_PID_LOOP_INTERVAL);
-			velocity = getGroundSpeed(); //just call it a couple of times so we get an idea of the current speed
-		}
-		int attempts = 3;
-		while ((attempts > 0) && (velocity > 0.02)){ //while we haven't ran out of attempts AND we detect some velocity, go the opposite way
+		float velocity = 0.0;
+		
+		velocity = getGroundSpeed(); //just call it a couple of times so we get an idea of the current speed
+		
+		int attempts = 1;
+		while ((attempts > 0) && (velocity > 0.2)){ //while we haven't ran out of attempts AND we detect some velocity, go the opposite way
 			if (_speed>0){
-				setRawSpeed(1400);
+				setRawSpeed(BRAKE_FRONT_RAW_SPEED);
 			}else{
-				setRawSpeed(1550);
+				setRawSpeed(BRAKE_BACK_RAW_SPEED);
 			}
 			velocity = getGroundSpeed();
 			attempts--;
 			delay(DEFAULT_PID_LOOP_INTERVAL);
 		}
+		setRawSpeed(IDLE_RAW_SPEED);
 	}
 	if (cruiseControl){
 		setRawSpeed(IDLE_RAW_SPEED); //shut the engines down, we should be stopped by now
@@ -127,8 +129,8 @@ void Car::stop(){ //platform specific method
 }
 
 float Car::getSpeed(){
-	if (cruiseControl) return _speed; //return speed in meters per second
-	return _speed - IDLE_RAW_SPEED; //return speed in microseconds
+	return _speed; //return speed in meters per second
+	
 }
 
 int Car::getAngle(){
