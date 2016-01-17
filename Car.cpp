@@ -98,7 +98,7 @@ void Car::setAngle(int degrees){ //platform specific method
 }
 
 void Car::stop(){ //platform specific method
-	if (_speed > 0.001){	
+	if (_speed > 0.001 || _speed < -0.001){	
 		_lastMotorUpdate = millis();
 		float velocity = 0;
 		for (int i = 0; i<3; i++){
