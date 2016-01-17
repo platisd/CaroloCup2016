@@ -49,7 +49,7 @@ void Car::setSpeed(float newSpeed){
 		if (_speed && (_speed != IDLE_RAW_SPEED) && (newSpeed * _speed) <= 0) stop(); //if the speeds are signed differently, stop the car and then set the new speed. Ignore this if the speed is already 0 and if speed is at the idle raw speed i.e. leftovers from non-cruise control mode (if IDLE_RAW_SPEED is not 0, it makes sense)
 		_speed = constrain(newSpeed, MAX_BACK_CRUISE_SPEED, MAX_FRONT_CRUISE_SPEED);
 	}else{
-		if ( _speed != IDLE_RAW_SPEED && (newSpeed < 0.001 || newSpeed > -0.001)) stop(); //if we are not already stopped (_speed = idle raw speed) and the new speed is 0 then stop
+		if ( _speed != IDLE_RAW_SPEED && (newSpeed < 0.001 && newSpeed > -0.001)) stop(); //if we are not already stopped (_speed = idle raw speed) and the new speed is 0 then stop
 		_speed = constrain(speedToFreq(newSpeed), MAX_BACK_RAW_SPEED, MAX_FRONT_RAW_SPEED);
 		setRawSpeed(_speed);
 	}
