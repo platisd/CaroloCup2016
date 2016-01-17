@@ -98,12 +98,25 @@ void Car::setAngle(int degrees){ //platform specific method
 }
 
 void Car::stop(){ //platform specific method
-	if (getSpeed()>IDLE_SPEED){
-		setRawSpeed(IDLE_RAW_SPEED - 100);
-	}else if(getSpeed()<IDLE_SPEED){
-		setRawSpeed(IDLE_RAW_SPEED + 100);
+	if (_speed > 0.001){	
+		_lastMotorUpdate = millis();
+		float velocity = 0;
+		for (int i = 0; i<3; i++){
+			delay(DEFAULT_PID_LOOP_INTERVAL);
+			velocity = getGroundSpeed(); //just call it a couple of times so we get an idea of the current speed
+		}
+		int attempts = 3;
+		while ((attempts > 0) && (velocity > 0.02)){ //while we haven't ran out of attempts AND we detect some velocity, go the opposite way
+			if (_speed>0){
+				setRawSpeed(1400);
+			}else{
+				setRawSpeed(1550);
+			}
+			velocity = getGroundSpeed();
+			attempts--;
+			delay(DEFAULT_PID_LOOP_INTERVAL);
+		}
 	}
-	delay(35);
 	if (cruiseControl){
 		setRawSpeed(IDLE_RAW_SPEED); //shut the engines down, we should be stopped by now
 		enableCruiseControl(_encoder); //re-initialize the cruise control, se we get rid of previous error and pid output
