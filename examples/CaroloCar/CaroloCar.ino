@@ -35,7 +35,7 @@ unsigned long previousTransmission = 0;
 unsigned long prevCheck = 0; //for the LEDs
 const unsigned short LEDrefreshRate = 200;
 
-const unsigned short OVERRIDE_TIMEOUT = 500;
+const unsigned short OVERRIDE_TIMEOUT = 100;
 unsigned long overrideRelease = 0; //variable to hold WHEN the override should be lifted
 volatile boolean overrideTriggered = false; //volatile since we are accessing it inside an ISR
 
@@ -48,6 +48,8 @@ volatile boolean steeringSignalPending = false;
 volatile unsigned int steeringSignalFreq = 0;
 
 volatile uint16_t qualityControl = 0; //if this byte is 1111111111111111, that means the measurements we received were of good quality (controller is turned on)
+const int qualityControlBits = sizeof(qualityControl) * 8; //the total number of bits in qualityControl
+const int qualityThreshold = 3; //the maximum amount of invalid measurements we can get and still consider the signal of acceptable quality
 unsigned int throttleFreq = 0;
 unsigned int servoFreq = 0;
 int led_int = 0;
@@ -96,7 +98,7 @@ void loop() {
 }
 
 void handleOverride() {
-  boolean qualityCheck = (qualityControl == 0xFFFF); //true if the last 16 measurements were valid
+  boolean qualityCheck = (getHighBits() >= qualityControlBits - qualityThreshold); //true if there are more high bits (valid measurements) than the total ones minus a threshold
   if (qualityCheck) { //good quality, means that the RC controller is turned on, therefore we should go on override mode
     overrideTriggered = true;
     overrideRelease = millis() + OVERRIDE_TIMEOUT; //specify the moment in the future to re-enable Serial communication
@@ -166,12 +168,11 @@ void handleInput() {
   } else { //we are in override mode now
     //handle override steering
     if (servoFreq && (servoFreq < MAX_OVERRIDE_FREQ) && (servoFreq > MIN_OVERRIDE_FREQ)) { //if you get 0, ignore it as it is not a valid value
-      
       short diff = servoFreq - NEUTRAL_FREQUENCY;
       if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
         car.setAngle(0);
       } else { //if the difference between the signal we received and the idle frequency is big enough, only then move the servo
-         // car.setAngle(servoFreq); // provide the flexibility to controll steering continuously
+        // car.setAngle(servoFreq); // provide the flexibility to controll steering continuously
         if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
           car.setAngle(OVERRIDE_STEER_RIGHT);
         } else {
@@ -182,7 +183,6 @@ void handleInput() {
     }
     //handle override throttle
     if (throttleFreq && (throttleFreq < MAX_OVERRIDE_FREQ) && (throttleFreq > MIN_OVERRIDE_FREQ)) {
-     
       short diff = throttleFreq - NEUTRAL_FREQUENCY;
       if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
         car.setSpeed(0);
@@ -304,7 +304,7 @@ void transmitSensorData() {
 #endif
     previousTransmission = millis();
   }
-} 
+}
 
 
 void setupChangeInterrupt(const unsigned short pin) { //a method to setup change interrupts on non external interrupt pins
@@ -329,7 +329,7 @@ ISR (PCINT2_vect) {
       throttleSignalPending = true; //signal loop() that there is a signal to handle
       qualityControl = qualityControl << 1;
       if ((throttleSignalFreq < MIN_OVERRIDE_FREQ)  || (throttleSignalFreq > MAX_OVERRIDE_FREQ)) { //since we are using an analog RC receiver, there is a lot of noise, usually under the frequency of 900 or over 2000
-        qualityControl |= 0; //put a 0 bit in the end of qualityControl byte
+          qualityControl = qualityControl << 1; //put a 0 bit in the end of qualityControl byte
       } else { //this means that is a valid looking signal
         qualityControl |= 1; //put a 1 bit in the end of qualityControl byte
       } //we do not need to do this for both the channels we have
@@ -346,4 +346,12 @@ ISR (PCINT2_vect) {
       steeringSignalPending = true; //signal loop() that there is a signal to handle
     }
   }
+}
+
+int getHighBits() {
+  int sum = 0;
+  for (int i = 0; i < qualityControlBits; i++) {
+    sum += (qualityControl >> i) & 1; //bit shift to the right i times and check if the last bit is 1. add up all the 1's
+  }
+  return sum;
 }
