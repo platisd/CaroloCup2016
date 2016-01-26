@@ -124,7 +124,7 @@ void Car::stop(){ //platform specific method
 		enableCruiseControl(_encoder); //re-initialize the cruise control, se we get rid of previous error and pid output
 		_speed = IDLE_SPEED;
 	}else{
-		setRawSpeed(speedToFreq(_speed));
+		setRawSpeed(speedToFreq(0));
 	}
 }
 
