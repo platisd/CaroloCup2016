@@ -126,7 +126,7 @@ class Gyroscope {
 		int readRegister(int deviceAddress, byte address);
 		unsigned short _samplingRate;
 		static const unsigned short DEFAULT_GYRO_SAMPLING;
-		int _angularDisplacement;
+		float _angularDisplacement;
 		unsigned long _prevSample;
 };
 
