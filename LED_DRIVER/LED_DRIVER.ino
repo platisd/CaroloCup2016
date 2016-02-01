@@ -48,6 +48,9 @@ void handleInput() {
       case 's':
         setState(STOP);
         break;
+      case 'p':
+        setState(PARKING);
+        break;
       default:
         setState(MOVING_STRAIGHT);
         break;
@@ -61,21 +64,32 @@ void setState(State state) {
 }
 
 void handleLEDs() {
-  if (stateChanged){ //if the state was just changed then we should re-initialize the led toggling sequence
+  if (stateChanged) { //if the state was just changed then we should re-initialize the led toggling sequence
     noLights(); //turn off all the LEDs, so whatever was previously on, will turn off now
     ledToggleVal = false; //start the ledToggle from the beginning
     ledToggled = true; //indicate the has been a led toggle
     prevToggle = millis(); //start the new toggle
     stateChanged = false; //acknowledge that we are aware of the state change and set it back to false
   }
-  if (millis() > prevToggle + LED_INTERVAL){ //if it is time to toggle the state of the LED
+  if (millis() > prevToggle + LED_INTERVAL) { //if it is time to toggle the state of the LED
     ledToggleVal = !ledToggleVal; //change the state
     ledToggled = true; //indicate the has been a led toggle
     prevToggle = millis(); //save the moment when this happened
   }
-  if ((currentState != MOVING_STRAIGHT) && ledToggled){ //if we are not MOVING_FORWARD (thus all LEDs are off) then toggle the led state AND there has been a toggled LED
-    digitalWrite(currentState, LED_TOGGLE_STATES[currentState][ledToggleVal]); //write the status of the led, on the appropriate pin (states match to pins)
-    ledToggled = false; //indicate that the led has been toggled in this specific state, so this doesn't need to be run again
+  if (currentState == PARKING) { //if we are on (the end of) parking mode,
+    for (int i = 0; i < 3; i++) { //we need to blink both flash lights, three times fast
+      digitalWrite(LEFT, HIGH);
+      digitalWrite(RIGHT, HIGH);
+      delay(300);
+      noLights();
+      delay(300);
+    }
+    setState(MOVING_STRAIGHT); //and then continue on with our lives
+  } else {
+    if ((currentState != MOVING_STRAIGHT) && ledToggled) { //if we are not MOVING_FORWARD (thus all LEDs are off) then toggle the led state AND there has been a toggled LED
+      digitalWrite(currentState, LED_TOGGLE_STATES[currentState][ledToggleVal]); //write the status of the led, on the appropriate pin (states match to pins)
+      ledToggled = false; //indicate that the led has been toggled in this specific state, so this doesn't need to be run again
+    }
   }
 }
 

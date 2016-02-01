@@ -6,7 +6,8 @@ enum State {
   STOP,
   MOVING_STRAIGHT,
   LEFT,
-  RC
+  RC,
+  PARKING
 };
 
 #define RX_PIN 2
