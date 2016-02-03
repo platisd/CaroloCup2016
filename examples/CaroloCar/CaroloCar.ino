@@ -1,6 +1,4 @@
-#include <Wire.h>
-#include <Servo.h>
-#include <CaroloCup.h>
+#include <Smartcar.h>
 #include "CarVars.h"
 
 //#define DEBUG //comment this line out for protobuffer output
@@ -23,11 +21,11 @@ boolean status;
 #include <Netstrings.h>
 #endif
 
-Odometer encoderLeft, encoderRight;
-Gyroscope gyro;
-Car car(SERVO_PIN, ESC_PIN); //steering, esc
+Odometer encoderLeft(33), encoderRight(33);
+Gyroscope gyro(15);
+Car car(useServo(SERVO_PIN), useESC(ESC_PIN)); //steering, esc
 SRF08 frontSonar, rearSonar;
-Sharp_IR rearLeftIR, rearRightIR, middleRearIR, middleFrontIR;
+GP2D120 rearLeftIR, rearRightIR, middleRearIR, middleFrontIR;
 
 const unsigned short COM_FREQ = 60;
 unsigned long previousTransmission = 0;
@@ -55,7 +53,6 @@ unsigned int servoFreq = 0;
 int led_int = 0;
 
 void setup() {
-  car.begin();
   frontSonar.attach(US_FRONT_ADDRESS);
   frontSonar.setGain(US_GAIN);
   frontSonar.setRange(US_RANGE);
@@ -72,6 +69,7 @@ void setup() {
   encoderLeft.begin();
   encoderRight.attach(ENCODER_RIGHT_PIN);
   encoderRight.begin();
+  car.begin(encoderLeft);
   setupChangeInterrupt(OVERRIDE_THROTTLE_PIN);
   setupChangeInterrupt(OVERRIDE_SERVO_PIN);
   gyro.attach();
@@ -81,7 +79,7 @@ void setup() {
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
   // car.enableCruiseControl(encoderLeft);
-  ///car.enableCruiseControl(encoderLeft, 1, 0, 1, 50);
+//  car.enableCruiseControl(1,4,6);
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
@@ -132,7 +130,7 @@ void handleInput() {
       String input = decodedNetstring(Serial.readStringUntil(','));
       if (input.startsWith("m")) {
         int throttle = input.substring(1).toInt();
-        car.setSpeed(throttle);
+        car.setSpeed(speedToScale(throttle));
       } else if (input.startsWith("t")) {
         int degrees = input.substring(1).toInt();
         car.setAngle(degrees);
@@ -158,7 +156,7 @@ void handleInput() {
       pb_istream_t instream = pb_istream_from_buffer(dec_buffer, BUFFER_SIZE);
       protoDec = pb_decode(&instream, Control_fields, &message);
       if (protoDec) { //if it's a valid protopacket
-        car.setSpeed((int)message.speed / 10.0); //divide by 10 since HLB is sending over floats as integers
+        car.setSpeed(speedToScale((int)message.speed / 10.0)); //divide by 10 since HLB is sending over floats as integers
         car.setAngle(message.steering);
         led_int = message.lights;
 
@@ -189,9 +187,11 @@ void handleInput() {
       } else {
         //car.setSpeed(throttleFreq - NEUTRAL_FREQUENCY);//// provide the flexibility to controll speed continuously
         if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
-          car.setSpeed(OVERRIDE_FORWARD_SPEED);
+          //       Serial.println(speedToScale(OVERRIDE_FORWARD_SPEED));
+          car.setSpeed(speedToScale(OVERRIDE_FORWARD_SPEED));
         } else {
-          car.setSpeed(OVERRIDE_BACKWARD_SPEED);
+          //       Serial.println(speedToScale(OVERRIDE_FORWARD_SPEED));
+          car.setSpeed(speedToScale(OVERRIDE_BACKWARD_SPEED));
         }
       }
     }
@@ -207,15 +207,19 @@ void updateLEDs(int li) {
     else { //if car is running
       bool lights[4] = {0, 0, 0, 0}; // right blinker, left blinker, brakes
       for (int i = 3; i > 0; i--) lights[i] = (li & (1 << i)) != 0;
-      if (lights[1]) Serial3.print('r');
-      if (lights[2]) Serial3.print('l');
-      if (lights[3]) Serial3.print('s');
-      if (li == 0) Serial3.print('i');
+      if (lights[1] && lights[2]) { //if two lights are on at the same time, it is the parking signal
+        Serial3.print('p');
+      } else {
+        if (lights[1]) Serial3.print('r');
+        if (lights[2]) Serial3.print('l');
+        if (lights[3]) Serial3.print('s');
+        if (li == 0) Serial3.print('i');
+      }
     }
 
 
     /*
-     else {  //if override is NOT triggered
+      else {  //if override is NOT triggered
       if (!car.getSpeed()) { //if car is immobilized
         Serial3.print('s');
       } else { //if car is running
@@ -227,7 +231,7 @@ void updateLEDs(int li) {
           Serial3.print('i');
         }
       }
-    }
+      }
     */
     prevCheck = millis();
   }
@@ -329,8 +333,7 @@ ISR (PCINT2_vect) {
       throttleSignalPending = true; //signal loop() that there is a signal to handle
       qualityControl = qualityControl << 1;
       if ((throttleSignalFreq < MIN_OVERRIDE_FREQ)  || (throttleSignalFreq > MAX_OVERRIDE_FREQ)) { //since we are using an analog RC receiver, there is a lot of noise, usually under the frequency of 900 or over 2000
- //       qualityControl |= 0; //put a 0 bit in the end of qualityControl byte
-          qualityControl = qualityControl << 1; //put a 0 bit in the end of qualityControl byte
+        qualityControl = qualityControl << 1; //put a 0 bit in the end of qualityControl byte
       } else { //this means that is a valid looking signal
         qualityControl |= 1; //put a 1 bit in the end of qualityControl byte
       } //we do not need to do this for both the channels we have
@@ -356,3 +359,17 @@ int getHighBits() {
   }
   return sum;
 }
+
+//transform the speed in meters per second to the -100 to 100 scale. empirically determined formula
+float speedToScale(float speed) {
+  if (car.cruiseControlEnabled()) return speed; //if cruise control is enabled, don't try to change it
+  if (speed > 0) { //we need to separate the two cases (larger or smaller than 0) as the formula we use is not linear
+    return 5.1696 * speed + 9.568;
+  } else if (speed < 0) {
+    return 20.415 * speed - 46.627;
+  } else{
+    return 0;
+  }
+}
+
+
