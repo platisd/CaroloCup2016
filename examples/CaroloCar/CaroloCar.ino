@@ -36,6 +36,8 @@ const unsigned short LEDrefreshRate = 200;
 const unsigned short OVERRIDE_TIMEOUT = 100;
 unsigned long overrideRelease = 0; //variable to hold WHEN the override should be lifted
 volatile boolean overrideTriggered = false; //volatile since we are accessing it inside an ISR
+unsigned long overrideBegin = 0; //the moment that the motors will be allowed to be moved after entering rc mode
+boolean prevOverrideState = false; //the previous override state used for determining when it's the first time we go into rc mode, so to wait for one second
 
 volatile unsigned long throttleSignalStart = 0;
 volatile boolean throttleSignalPending = false;
@@ -79,7 +81,7 @@ void setup() {
   pinMode(BUTTON3_PIN, INPUT); //button 3
   delay(500); //wait a bit for the esc
   // car.enableCruiseControl(encoderLeft);
-//  car.enableCruiseControl(1,4,6);
+  //  car.enableCruiseControl(1,4,6);
   car.setSpeed(0);
   Serial.begin(115200); //to HLB
   Serial.setTimeout(200); //set a timeout so Serial.readStringUntil dies after the specified amount of time
@@ -99,10 +101,15 @@ void handleOverride() {
   boolean qualityCheck = (getHighBits() >= qualityControlBits - qualityThreshold); //true if there are more high bits (valid measurements) than the total ones minus a threshold
   if (qualityCheck) { //good quality, means that the RC controller is turned on, therefore we should go on override mode
     overrideTriggered = true;
+    if (!prevOverrideState && (millis() > overrideRelease)) { //if the last qualityCheck was false (therefore going into rc mode for the first time) AND we are NOT within overrideRelease (in order to avoid restarting in case of a fast bad qualitycheck within the OVERRIDE_TIMEOUT
+      overrideBegin = millis() + OVERRIDE_BEGIN_OFFSET; //we need to wait 1 sec according to the rules while in rc mode before moving the motors
+    }
     overrideRelease = millis() + OVERRIDE_TIMEOUT; //specify the moment in the future to re-enable Serial communication
-  } else { //this means that at least one of the last 16 measurements was not valid, therefore we consider the signal not to be of good quality (RC controller is turned off)
+    prevOverrideState = true;
+  } else { //this means that the necessary amount of measurements was not valid, therefore we consider the signal not to be of good quality (RC controller is turned off)
     throttleSignalPending = false; //indicate that loop() has processed/disregarded the throttle signal
     steeringSignalPending = false; //indicate that loop() has read/disregarded the servo signal
+    prevOverrideState = false;
   }
   if (overrideTriggered) { //if override is triggered, then you can consider signals from the channels
     boolean _throttleSignalPending = throttleSignalPending;
@@ -164,36 +171,41 @@ void handleInput() {
 #endif
     }
   } else { //we are in override mode now
-    //handle override steering
-    if (servoFreq && (servoFreq < MAX_OVERRIDE_FREQ) && (servoFreq > MIN_OVERRIDE_FREQ)) { //if you get 0, ignore it as it is not a valid value
-      short diff = servoFreq - NEUTRAL_FREQUENCY;
-      if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
-        car.setAngle(0);
-      } else { //if the difference between the signal we received and the idle frequency is big enough, only then move the servo
-        // car.setAngle(servoFreq); // provide the flexibility to controll steering continuously
-        if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
-          car.setAngle(OVERRIDE_STEER_RIGHT);
+    if (millis() >= overrideBegin) { //don't do anything, until we have reached the overrideBegin moment, which is 1000 milliseconds after we have first entered RC mode
+      //handle override steering
+      if (servoFreq && (servoFreq < MAX_OVERRIDE_FREQ) && (servoFreq > MIN_OVERRIDE_FREQ)) { //if you get 0, ignore it as it is not a valid value
+        short diff = servoFreq - NEUTRAL_FREQUENCY;
+        if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
+          car.setAngle(0);
+        } else { //if the difference between the signal we received and the idle frequency is big enough, only then move the servo
+          // car.setAngle(servoFreq); // provide the flexibility to controll steering continuously
+          if (servoFreq > NEUTRAL_FREQUENCY) { //turn right if the value is larger than the idle frequency
+            car.setAngle(OVERRIDE_STEER_RIGHT);
+          } else {
+            car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
+          }
+        }
+        //Serial.println(encoderLeft.getSpeed());
+      }
+      //handle override throttle
+      if (throttleFreq && (throttleFreq < MAX_OVERRIDE_FREQ) && (throttleFreq > MIN_OVERRIDE_FREQ)) {
+        short diff = throttleFreq - NEUTRAL_FREQUENCY;
+        if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
+          car.setSpeed(0);
         } else {
-          car.setAngle(OVERRIDE_STEER_LEFT);//turn left if the value is smaller than the idle frequency
+          //car.setSpeed(throttleFreq - NEUTRAL_FREQUENCY);//// provide the flexibility to controll speed continuously
+          if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
+            //       Serial.println(speedToScale(OVERRIDE_FORWARD_SPEED));
+            car.setSpeed(speedToScale(OVERRIDE_FORWARD_SPEED));
+          } else {
+            //       Serial.println(speedToScale(OVERRIDE_FORWARD_SPEED));
+            car.setSpeed(speedToScale(OVERRIDE_BACKWARD_SPEED));
+          }
         }
       }
-      //Serial.println(encoderLeft.getSpeed());
-    }
-    //handle override throttle
-    if (throttleFreq && (throttleFreq < MAX_OVERRIDE_FREQ) && (throttleFreq > MIN_OVERRIDE_FREQ)) {
-      short diff = throttleFreq - NEUTRAL_FREQUENCY;
-      if (abs(diff) < OVERRIDE_FREQ_TOLERANCE) { //if the signal we received is close to the idle frequency, then we assume it's neutral
-        car.setSpeed(0);
-      } else {
-        //car.setSpeed(throttleFreq - NEUTRAL_FREQUENCY);//// provide the flexibility to controll speed continuously
-        if (throttleFreq < NEUTRAL_FREQUENCY) { //turn right if the value is smaller (that's the way it is with this receiver) than the idle frequency
-          //       Serial.println(speedToScale(OVERRIDE_FORWARD_SPEED));
-          car.setSpeed(speedToScale(OVERRIDE_FORWARD_SPEED));
-        } else {
-          //       Serial.println(speedToScale(OVERRIDE_FORWARD_SPEED));
-          car.setSpeed(speedToScale(OVERRIDE_BACKWARD_SPEED));
-        }
-      }
+    }else{ //since this is the first time we are going into rc mode (but still not taking input from the remotr control), stop the engines and straighten the steering wheel
+      car.setSpeed(0);
+      car.setAngle(0);
     }
     while (Serial.read() != -1); //discard incoming data while on override
   }
@@ -367,7 +379,7 @@ float speedToScale(float speed) {
     return 5.1696 * speed + 9.568;
   } else if (speed < 0) {
     return 20.415 * speed - 46.627;
-  } else{
+  } else {
     return 0;
   }
 }
