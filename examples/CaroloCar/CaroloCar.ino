@@ -204,7 +204,7 @@ void handleInput() {
         }
       }
     }else{ //since this is the first time we are going into rc mode (but still not taking input from the remotr control), stop the engines and straighten the steering wheel
-      car.setSpeed(0);
+      car.setSpeed(-20);// for braking 
       car.setAngle(0);
     }
     while (Serial.read() != -1); //discard incoming data while on override
