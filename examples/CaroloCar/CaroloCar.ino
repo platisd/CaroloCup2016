@@ -130,6 +130,7 @@ void handleInput() {
     if (overrideTriggered) { //this state is only entered when the OVERRIDE_TIMEOUT is over
       overrideTriggered = false;
       car.setSpeed(0); //after going out of the override mode, set speed and steering to initial position
+      Serial3.print('i');// dim the brake light when brake is released
       car.setAngle(0);
     }
     if (Serial.available()) {
@@ -204,7 +205,8 @@ void handleInput() {
         }
       }
     }else{ //since this is the first time we are going into rc mode (but still not taking input from the remotr control), stop the engines and straighten the steering wheel
-      car.setSpeed(-20);// for braking 
+      car.setSpeed(-20);// for braking
+      Serial3.print('s');//light the speed light when braking 
       car.setAngle(0);
     }
     while (Serial.read() != -1); //discard incoming data while on override
