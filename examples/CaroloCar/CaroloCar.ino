@@ -378,7 +378,7 @@ int getHighBits() {
 float speedToScale(float speed) {
   if (car.cruiseControlEnabled()) return speed; //if cruise control is enabled, don't try to change it
   if (speed > 0) { //we need to separate the two cases (larger or smaller than 0) as the formula we use is not linear
-    return 5.1696 * speed + 9.568;
+    return 5.352* speed + 8.0895; //5.1696 * speed + 9.568;
   } else if (speed < 0) {
     return 20.415 * speed - 46.627;
   } else {
