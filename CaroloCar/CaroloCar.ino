@@ -52,7 +52,7 @@ const int qualityControlBits = sizeof(qualityControl) * 8; //the total number of
 const int qualityThreshold = 3; //the maximum amount of invalid measurements we can get and still consider the signal of acceptable quality
 unsigned int throttleFreq = 0;
 unsigned int servoFreq = 0;
-int led_int = 0;
+int ledPacket = 0; //a packet that includes the led light states
 
 void setup() {
   frontSonar.attach(US_FRONT_ADDRESS);
@@ -91,9 +91,9 @@ void setup() {
 void loop() {
   handleOverride(); //look for an override signal and if it exists disable serial input from the HLB
   handleInput(); //look for a serial input if override is not triggered and act accordingly
-  updateLEDs(led_int); //update LEDs depending on the mode we are currently in
+  updateLEDs(); //update LEDs depending on the mode we are currently in
   gyro.update(); //integrate gyroscope's readings
-  car.updateMotors();
+  car.updateMotors(); //for the PID controller (if enabled)
   transmitSensorData(); //fetch and transmit the sensor data in the correct intervals
 }
 
@@ -166,7 +166,7 @@ void handleInput() {
       if (protoDec) { //if it's a valid protopacket
         car.setSpeed(speedToScale((int)message.speed / 10.0)); //divide by 10 since HLB is sending over floats as integers
         car.setAngle(message.steering);
-        led_int = message.lights;
+        ledPacket = message.lights;
 
       }
 #endif
@@ -213,21 +213,21 @@ void handleInput() {
   }
 }
 
-void updateLEDs(int li) {
+void updateLEDs() {
   if (millis() - prevCheck > LEDrefreshRate) {
     if (overrideTriggered) { //if override is triggered
       Serial3.print('m');
     }
     else { //if car is running
       bool lights[4] = {0, 0, 0, 0}; // right blinker, left blinker, brakes
-      for (int i = 3; i > 0; i--) lights[i] = (li & (1 << i)) != 0;
+      for (int i = 3; i > 0; i--) lights[i] = (ledPacket & (1 << i)) != 0;
       if (lights[1] && lights[2]) { //if two lights are on at the same time, it is the parking signal
         Serial3.print('p');
       } else {
         if (lights[1]) Serial3.print('r');
         if (lights[2]) Serial3.print('l');
         if (lights[3]) Serial3.print('s');
-        if (li == 0) Serial3.print('i');
+        if (ledPacket == 0) Serial3.print('i');
       }
     }
 
@@ -385,5 +385,3 @@ float speedToScale(float speed) {
     return 0;
   }
 }
-
-
