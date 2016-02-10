@@ -1,6 +1,4 @@
-#include <Wire.h>
-#include <Servo.h>
-#include <CaroloCup.h>
+#include <Smartcar.h>
 
 void setup() {
   // put your setup code here, to run once:

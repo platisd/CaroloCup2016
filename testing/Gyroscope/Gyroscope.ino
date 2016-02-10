@@ -1,8 +1,6 @@
-#include <Wire.h>
-#include <Servo.h>
-#include <CaroloCup.h>
+#include <Smartcar.h>
 
-Gyroscope gyro;
+Gyroscope gyro(15;
 
 void setup() {
   gyro.attach();

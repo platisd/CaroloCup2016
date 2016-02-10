@@ -1,8 +1,6 @@
-#include <Wire.h>
-#include <Servo.h>
-#include <CaroloCup.h>
+#include <Smartcar.h>
 
-Odometer encoder, encoder2;
+Odometer encoder(33), encoder2(33);
 void setup() {
   Serial.begin(9600);
   encoder.attach(2);
