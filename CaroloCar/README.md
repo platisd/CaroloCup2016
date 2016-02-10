@@ -2,7 +2,7 @@
 This is the sketch that runs on Team Pegasus' autonomous vehicle, taking part in the Carolo Cup 2016 competition in Germany.
 
 ## How to install
-- Install the [CaroloCup2016 library](https://github.com/platisd/CaroloCup2016)
+- Install the [Smartcar shield library](https://github.com/platisd/smartcar_shield) through the Arduino IDE library manager
 - Install the [Netstrings library](https://github.com/platisd/Netstrings)
 - Open this sketch in the Arduino IDE (you can also find it in the library's examples after you have installed it correctly)
 - Install the [Nano protobuff library](https://github.com/hspilkov/nanopb) compiled for this specific project
