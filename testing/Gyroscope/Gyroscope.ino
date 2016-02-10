@@ -1,6 +1,6 @@
 #include <Smartcar.h>
 
-Gyroscope gyro(15;
+Gyroscope gyro(15);
 
 void setup() {
   gyro.attach();
