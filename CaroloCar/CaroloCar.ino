@@ -366,7 +366,7 @@ ISR (PCINT2_vect) {
   }
 }
 
-int getHighBits() { //returns how many 1's exist in the qualityControlBits variable
+int getHighBits() { //returns how many 1's exist in the qualityControl variable
   int sum = 0;
   for (int i = 0; i < qualityControlBits; i++) {
     sum += (qualityControl >> i) & 1; //bit shift to the right i times and check if the last bit is 1. add up all the 1's
