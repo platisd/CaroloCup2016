@@ -151,7 +151,7 @@ void handleInput() {
       }
 #else //use protobuffer
       String input = Serial.readStringUntil(flagEND);
-      for (int i = 0, pos = 0; i < input.length(); i++, pos++) {
+      for (unsigned int i = 0, pos = 0; i < input.length(); i++, pos++) {
         if (input[i] == flagESC) {
           i++;
           dec_buffer[pos] = (int)input[i] ^ varXOR;
@@ -309,7 +309,7 @@ void transmitSensorData() {
     status = pb_encode(&outstream, Sensors_fields, &message);
     message_length = outstream.bytes_written;
     if (status) { //if valid send the protobytes
-      for (int i = 0; i < message_length; i++) {
+      for (unsigned int i = 0; i < message_length; i++) {
         if (enc_buffer[i] == flagEND || enc_buffer[i] == flagESC) {
           Serial.write(flagESC);
           Serial.write(enc_buffer[i]^varXOR);
