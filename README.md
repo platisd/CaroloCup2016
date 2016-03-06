@@ -16,9 +16,10 @@ Finally, the repository for the application that is running in the single board 
 - Speed encoder
 - Ultrasonic sensors (SRF08)
 - Infrared distance sensors (SHARP GP2D120)
+- L3G4200D based gyroscope (GY-50)
 
 ### Dependencies
-- [Wire library](http://arduino.cc/en/reference/Wire) used for getting data from the SRF08 ultrasonic sensors, via I2C
+- [Wire library](http://arduino.cc/en/reference/Wire) used for getting data from the SRF08 ultrasonic sensors and the gyroscope, via I2C
 - [Servo library](http://www.arduino.cc/en/Reference/Servo) used for controlling the ESC and the steering wheel
 - [Smartcar shield library](https://github.com/platisd/smartcar_shield) enables the user to easily control the car, abstracting the low level functions
 
